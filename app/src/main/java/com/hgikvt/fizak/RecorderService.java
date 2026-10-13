@@ -3,7 +3,6 @@ package com.hgikvt.fizak;
 import android.app.*;
 import android.content.*;
 import android.media.MediaRecorder;
-import android.media.audiofx.NoiseSuppressor;
 import android.os.*;
 import java.io.File;
 
@@ -11,7 +10,6 @@ public class RecorderService extends Service {
     public static final String START="fizak.START", STOP="fizak.STOP", STATE="fizak.STATE";
     public static final String EXTRA_PATH="path", EXTRA_ACTIVE="active", EXTRA_ERROR="error";
     private MediaRecorder recorder;
-    private NoiseSuppressor suppressor;
     private String currentPath;
     private static final int NOTIFICATION_ID=41;
     @Override public void onCreate(){ super.onCreate(); createChannel(); }
@@ -32,8 +30,6 @@ public class RecorderService extends Service {
             recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
             recorder.setAudioSamplingRate(48000); recorder.setAudioEncodingBitRate(128000);
             recorder.setOutputFile(path); recorder.prepare(); recorder.start();
-            int session=recorder.getAudioSessionId();
-            if(NoiseSuppressor.isAvailable()) { suppressor=NoiseSuppressor.create(session); if(suppressor!=null) suppressor.setEnabled(true); }
             startForeground(NOTIFICATION_ID,notification("Идёт запись лекции"));
             broadcast(true,path,null);
         } catch(Exception e){ release(); broadcast(false,path,e.getMessage()==null?"Не удалось начать запись":e.getMessage()); stopSelf(); }
@@ -50,7 +46,6 @@ public class RecorderService extends Service {
         if(path!=null) i.putExtra(EXTRA_PATH,path); if(error!=null) i.putExtra(EXTRA_ERROR,error); sendBroadcast(i);
     }
     private void release(){
-        if(suppressor!=null){ try{suppressor.setEnabled(false); suppressor.release();}catch(Exception ignored){} suppressor=null; }
         if(recorder!=null){ try{recorder.reset();}catch(Exception ignored){} try{recorder.release();}catch(Exception ignored){} recorder=null; }
     }
     private Notification notification(String text){
