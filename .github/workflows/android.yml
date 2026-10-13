@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+    paths-ignore:
+      - FizAk.apk
+      - FizAk-source.zip
   pull_request:
   workflow_dispatch:
 permissions:
@@ -37,6 +40,16 @@ jobs:
         run: gradle assembleDebug
       - name: Prepare downloads
         run: cp app/build/outputs/apk/debug/app-debug.apk FizAk.apk
+      - name: Publish APK to Pages root
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add FizAk.apk
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish verified FizAk APK from $GITHUB_SHA"
+            git push origin HEAD:main
+          fi
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
